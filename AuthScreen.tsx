@@ -2,38 +2,46 @@ import React, { useState } from 'react';
 import { StyleSheet, TextInput, Button, View, Text } from 'react-native';
 import { Auth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { Firestore, setDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
+import { RootStackParamList } from './types'; // Импортируйте типы
+import { StackNavigationProp } from '@react-navigation/stack';
 
 interface AuthScreenProps {
-  auth: Auth;          // Типизация для auth
-  firestore: Firestore; // Типизация для firestore
+  auth: Auth;
+  firestore: Firestore;
 }
 
+// Указываем тип навигации
+type AuthScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Auth'>;
+
 const AuthScreen: React.FC<AuthScreenProps> = ({ auth, firestore }) => {
+  const navigation = useNavigation<AuthScreenNavigationProp>(); // Указываем тип навигации
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [isLogin, setIsLogin] = useState(true); // Переключение между входом и регистрацией
+  const [isLogin, setIsLogin] = useState(true);
 
   const handleAuth = async () => {
     try {
       if (isLogin) {
-        // Вход через email и пароль
+        // Вход
         await signInWithEmailAndPassword(auth, email, password);
       } else {
-        // Регистрация через email и пароль
+        // Регистрация
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-
-        // Сохранение данных пользователя в Firestore
         await setDoc(doc(firestore, 'users', userCredential.user.uid), {
           email: userCredential.user.email,
           createdAt: serverTimestamp(),
         });
       }
+
+      // Перенаправление на экран "Добро пожаловать"
+      navigation.navigate('Welcome');
     } catch (error) {
       if (error instanceof Error) {
         setErrorMessage(error.message);
       } else {
-        setErrorMessage("An unexpected error occurred");
+        setErrorMessage('An unexpected error occurred');
       }
     }
   };
@@ -58,7 +66,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ auth, firestore }) => {
       />
       <Button title={isLogin ? 'Login' : 'Register'} onPress={handleAuth} />
       <Text style={styles.switchText} onPress={() => setIsLogin(!isLogin)}>
-        {isLogin ? 'Don\'t have an account? Register' : 'Already have an account? Login'}
+        {isLogin ? "Don't have an account? Register" : 'Already have an account? Login'}
       </Text>
     </View>
   );
