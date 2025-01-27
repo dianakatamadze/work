@@ -4,7 +4,9 @@ import { GiftedChat, IMessage } from 'react-native-gifted-chat';
 import { collection, query, where, getDocs, addDoc, onSnapshot, Timestamp } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import firestore, { FirebaseFirestoreTypes } from '@react-native-firebase/firestore'; 
+import firestore from '@react-native-firebase/firestore';
+
+
 
 
 interface Chat {
@@ -24,7 +26,7 @@ interface Message {
   timestamp: Timestamp;
 }
 
-const ChatScreen = ({ auth, firestore }: { auth: FirebaseAuthTypes.Module; firestore: FirebaseFirestoreTypes.Firestore }) => {
+const ChatScreen = ({ auth, firestore }: { auth: FirebaseAuthTypes.Module; firestore: any }) => {
   const [userChats, setUserChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [messageList, setMessageList] = useState<IMessage[]>([]);
@@ -82,7 +84,12 @@ const ChatScreen = ({ auth, firestore }: { auth: FirebaseAuthTypes.Module; fires
               user: { _id: data.senderId }, // Добавляем информацию о пользователе
             } as IMessage;
           })
-          .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime()); // Используем getTime() для сортировки
+          .sort((a, b) => {
+            const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+            const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+            return dateA.getTime() - dateB.getTime();
+          });
+          
         setMessageList(messages);
       });
       return () => unsubscribe();
