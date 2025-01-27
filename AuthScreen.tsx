@@ -3,7 +3,7 @@ import { StyleSheet, TextInput, Button, View, Text } from 'react-native';
 import { Auth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { Firestore, setDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
-import { RootStackParamList } from './types'; // Импортируйте типы
+import { RootStackParamList } from './types';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 interface AuthScreenProps {
@@ -18,6 +18,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ auth, firestore }) => {
   const navigation = useNavigation<AuthScreenNavigationProp>(); // Указываем тип навигации
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState(''); // Добавлено поле для имени пользователя
   const [errorMessage, setErrorMessage] = useState('');
   const [isLogin, setIsLogin] = useState(true);
 
@@ -28,15 +29,20 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ auth, firestore }) => {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
         // Регистрация
+        if (!email.trim()) {
+          setErrorMessage('Email is required');
+          return;
+        }
+
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await setDoc(doc(firestore, 'users', userCredential.user.uid), {
           email: userCredential.user.email,
-          createdAt: serverTimestamp(),
+          name: name.trim(),
         });
       }
 
-      // Перенаправление на экран "Добро пожаловать"
-      navigation.navigate('Welcome');
+      // Перенаправление на экран чатов
+      navigation.navigate('Chat');
     } catch (error) {
       if (error instanceof Error) {
         setErrorMessage(error.message);
@@ -50,6 +56,14 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ auth, firestore }) => {
     <View style={styles.container}>
       <Text style={styles.title}>{isLogin ? 'Login' : 'Register'}</Text>
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+      {!isLogin && (
+        <TextInput
+          style={styles.input}
+          placeholder="Name"
+          value={name}
+          onChangeText={setName}
+        />
+      )}
       <TextInput
         style={styles.input}
         placeholder="Email"
